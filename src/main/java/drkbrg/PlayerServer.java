@@ -1,11 +1,13 @@
+package drkbrg;
+
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 
 import java.net.InetSocketAddress;
 
-public class Server extends WebSocketServer {
-    public Server(InetSocketAddress address) {
+public class PlayerServer extends WebSocketServer {
+    public PlayerServer(InetSocketAddress address) {
         super(address);
     }
 
@@ -29,7 +31,7 @@ public class Server extends WebSocketServer {
 
     @Override
     public void onStart() {
-        System.out.println("Drakborgen Server started successfully!");
+        System.out.println("Drkbrg Server started successfully!");
     }
 
     @Override
