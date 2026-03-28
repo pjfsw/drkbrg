@@ -4,15 +4,18 @@ import { updatePlayerStats, drawTile } from './renderer.js';
 async function start() {
     const config = await getWsConfig();
 
-    const socket = createSocket(`ws://${window.location.hostname}:${config.wsPort}`, (data) => {
-        // When server sends data, decide what to do
-        if (data.type === "STATS_UPDATE") {
-            updatePlayerStats(data.payload);
-        } else if (data.type === "NEW_TILE") {
-            drawTile(data.x, data.y, data.tileType);
+    const socket = createSocket(`ws://${window.location.hostname}:${config.wsPort}`, (msg) => {
+        const data = msg.data;
+        switch(msg.type) {
+//            case "STATS_UPDATE":
+//                updatePlayerStats(msg.payload);
+//                break;
+            case "NEW_TILE":
+                drawTile(data.x, data.y, data.tileType);
+                break;
+            // ... other cases
         }
     });
-
 
     socket.onopen = () => {
         const statusDiv = document.getElementById('status');
@@ -30,9 +33,9 @@ async function start() {
 
 
     // Handle button clicks
-    document.getElementById('moveBtn').onclick = () => {
-        socket.send(JSON.stringify({ type: "MOVE", dir: "NORTH" }));
-    };
+    //document.getElementById('moveBtn').onclick = () => {
+//        socket.send(JSON.stringify({ type: "MOVE", dir: "NORTH" }));
+//    };
 }
 
 // At the bottom of main.js

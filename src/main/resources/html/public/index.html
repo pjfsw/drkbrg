@@ -14,14 +14,19 @@
         button:hover { background: #666; }
     </style>
 </head>
+
 <body>
 <h1>Drakborgen</h1>
 <div id="status" class="disconnected">Status: Disconnected</div>
 
-<button id="moveBtn">Move Hero (Random JSON)</button>
+<div id="game-container">
+    <canvas id="gameBoard" width="800" height="800"></canvas>
+</div>
 
-<h3>drkbrg.PlayerServer Log:</h3>
-<div id="log"></div>
+<div id="ui-overlay">
+    <div id="hp">KP: --</div>
+    <div id="strength">SF: --</div>
+</div>
 
 <script type="module" src="js/main.js"></script>
 </body>
