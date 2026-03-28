@@ -13,6 +13,6 @@ typedef struct {
 
 void gameInit(Game *game);
 
-void gameUpdate(Game *game);
+void gameUpdate(void *userData);
 
-void gameRender(Game *game, Ui *ui);
+void gameRender(void *userData, Ui *ui);

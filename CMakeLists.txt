@@ -8,12 +8,33 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Look for SDL3 package
 find_package(SDL3 REQUIRED)
+find_package(SDL3_image REQUIRED)
+
+# --- PIXEL ENGINE (Independent Library) ---
+add_library(PixelEngine STATIC 
+    pixelengine/ui.c 
+    pixelengine/ui.h
+    pixelengine/pixelengine.c
+    pixelengine/pixelengine.h
+)
+
+# Tell Engine where its own headers are, and export that path to consumers
+target_include_directories(PixelEngine PUBLIC pixelengine)
+
+# Link SDL3 to the Engine
+target_link_libraries(PixelEngine PRIVATE SDL3::SDL3 SDL3_image::SDL3_image)
 
 # Point to the source file inside the src directory
 add_executable(drkbrg 
     src/drkbrg.c
-    src/game.c
-    src/ui.c)
+    src/game.c)
+
+# Game needs to see Game headers
+target_include_directories(drkbrg PRIVATE src)
+
+# Enforce dependency: Game -> Engine
+# This automatically allows #include "ui.h" in game.c
+target_link_libraries(drkbrg PRIVATE PixelEngine)
 
 # Compiler switches for pedantic errors
 if(MSVC)
@@ -32,5 +53,3 @@ else()
     )
 endif()
 
-# Link SDL3 library
-target_link_libraries(drkbrg PRIVATE SDL3::SDL3)
