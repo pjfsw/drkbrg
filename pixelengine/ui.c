@@ -33,6 +33,14 @@ void uiDestroy(Ui *ui) {
 }
 
 
+int uiWidth(const Ui *ui) {
+    return ui->w;
+}
+
+int uiHeight(const Ui *ui) {
+    return ui->h;
+}
+
 TilesheetId uiLoadTilesheet(Ui *ui, const char *path) {
     if (ui->tilesheetCount >= MAX_TILESHEETS) {
         return -1;
@@ -70,19 +78,71 @@ TileId uiCreateTile(Ui *ui, TilesheetId tilesheetId, int x, int y, int w, int h)
     return tileId; 
 }
 
-void uiDrawTile(Ui *ui, int x, int y, TileId tile) {
+void uiContextSetDefault(const Ui *ui, UiContext *ctx) {
+    ctx->ui = ui;
+    ctx->useCut = false;
+}
+
+void uiContextSet(const Ui *ui, UiContext *ctx, int x, int y, int w, int h) {
+    ctx->ui = ui;
+    ctx->useCut = true;
+    ctx->cut.x = x;
+    ctx->cut.y = y;
+    ctx->cut.w = w;
+    ctx->cut.h = h;
+}
+
+static void setContext(const UiContext *ctx) {
+    if (ctx->useCut) {
+        SDL_SetRenderClipRect(ctx->ui->renderer, &ctx->cut);
+    } else {
+        SDL_SetRenderClipRect(ctx->ui->renderer, NULL);
+    }
+}
+
+static inline int getX(const UiContext *ctx, int x) {
+    if (ctx->useCut) {
+        return ctx->cut.x + x;
+    } else {
+        return x;
+    }
+}
+
+static inline int getY(const UiContext *ctx, int y) {
+    if (ctx->useCut) {
+        return ctx->cut.y + y;
+    } else {
+        return y;
+    }
+}
+
+void uiDrawTile(const UiContext *ctx, int x, int y, TileId tile) {
+    const Ui *ui = ctx->ui;
+
     if ((tile < 0) || (tile >= ui->tileCount)) {
         return;
     }
-    // TODO use preloaded pngs
+}
+
+void uiDrawRect(const UiContext *ctx, int x, int y, int w, int h, uint32_t color, bool fill) {
+    const Ui *ui = ctx->ui;
+    setContext(ctx);
     SDL_FRect rect = {
-        .x = x * 32,
-        .y = y * 32,
-        .w = 32,
-        .h = 32
+        .x = getX(ctx, x),
+        .y = getY(ctx, y),
+        .w = w,
+        .h = h
     };
-    SDL_SetRenderDrawColor(ui->renderer, 255,0,255,255);
-    SDL_RenderRect(ui->renderer, &rect);
+    SDL_SetRenderDrawColor(ui->renderer, (color >> 24) & 0xff, (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff);    
+    if (fill) {
+        SDL_RenderFillRect(ui->renderer, &rect);
+    } else {
+        SDL_RenderRect(ui->renderer, &rect);
+    }
+}
+
+void uiFillRect(const UiContext *ctx, int x, int y, int w, int h, uint32_t color) {
+    uiDrawRect(ctx, x, y, w, h, color, true);
 }
 
 void uiBeginRender(Ui *ui) {

@@ -18,7 +18,7 @@ typedef struct {
 
 typedef struct {
     int w;
-    int h;
+    int h;   
     SDL_Renderer *renderer;
     SDL_Texture *target;
     SDL_Texture *tilesheets[MAX_TILESHEETS];
@@ -27,16 +27,33 @@ typedef struct {
     int tileCount;
 } Ui;
 
+typedef struct {
+    const Ui *ui;
+    SDL_Rect cut;
+    bool useCut;
+} UiContext;
 
 void uiInit(Ui *ui, SDL_Renderer *renderer, int w, int h);
 
 void uiDestroy(Ui *ui);
 
+int uiWidth(const Ui *ui);
+
+int uiHeight(const Ui *ui);
+
 TilesheetId uiLoadTilesheet(Ui *ui, const char *path);
 
 TileId uiCreateTile(Ui *ui, TilesheetId tilesheetId, int x, int y, int w, int h);
 
-void uiDrawTile(Ui *ui, int x, int y, TileId tile);
+const UiContext *uiContextGetDefault(const Ui *ui);
+
+void uiContextSet(const Ui *ui, UiContext *ctx, int x, int y, int w, int h);
+
+void uiDrawTile(const UiContext *ctx, int x, int y, TileId tile);
+
+void uiDrawRect(const UiContext *ctx, int x, int y, int w, int h, uint32_t color, bool fill);
+
+void uiFillRect(const UiContext *ctx, int x, int y, int w, int h, uint32_t color);
 
 void uiBeginRender(Ui *ui);
 

@@ -11,7 +11,7 @@ typedef struct {
 
 typedef void (*PeGameUpdateFunc)(void *userData);
 
-typedef void (*PeGameRenderFunc)(void *userData, Ui *ui);
+typedef void (*PeGameRenderFunc)(void *userData, const Ui *ui);
 
 bool peInit(PixelEngine *pe, int width, int height, char *title);
 
