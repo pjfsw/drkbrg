@@ -94,7 +94,7 @@ TileId uiCreateTile(Ui *ui, TilesheetId tilesheetId, int x, int y, int w, int h)
 }
 
 TileId uiCreateTextboxTile(
-    Ui *ui, const char *text[], int w, int h, uint32_t textColor, uint32_t frameColor, uint32_t fillColor, bool fill) {
+    Ui *ui, const char *text, int w, int h, uint32_t textColor, uint32_t frameColor, uint32_t fillColor, bool fill) {
     if ((ui->tilesheetCount >= MAX_TILESHEETS) || (ui->tileCount >= MAX_TILES)) {
         return -1;
     }
@@ -113,15 +113,29 @@ TileId uiCreateTextboxTile(
     }
     setColor(ui, frameColor);
     SDL_RenderRect(ui->renderer, &rect);
-    int rows = 0;
-    while (text[rows] != 0) {
-        rows++;
+    int rows = 1;
+    int i = 0 ;
+    while (text[i] != 0) {
+        if (text[i] == '\n') {
+            rows++;
+        }
+        i++;
     };
 
     int ty = (h - rows * FONT_HEIGHT) / 2 ;
+    int cpos = 0;
     for (int i = 0; i < rows; i++) {
-        int tx = (w - strlen(text[i]) * FONT_WIDTH) / 2;
-        fontWrite(&ui->font, text[i], tx, ty + i * FONT_HEIGHT, textColor);
+        int start = cpos;
+        while ((text[cpos] != 0) && (text[cpos] != '\n')) {
+            cpos++;
+        }
+        char buf[100];
+        memset(buf, 0, sizeof(buf));
+        strncpy(buf, &text[start], cpos-start);
+
+        int tx = (w - strlen(buf) * FONT_WIDTH) / 2;
+        fontWrite(&ui->font, buf, tx, ty + i * FONT_HEIGHT, textColor);
+        cpos++;
     }
     return createTile(ui, tilesheetId, 0, 0, w, h);
 }
@@ -222,6 +236,8 @@ void uiWrite(const UiContext *ctx, const char *text, int x, int y, uint32_t colo
 
 void uiBeginRender(Ui *ui) {
     SDL_SetRenderTarget(ui->renderer, ui->target);
+    SDL_SetRenderDrawColor(ui->renderer, 0, 0, 0, 255); /* Dark background */
+    SDL_RenderClear(ui->renderer);
 }
 
 void uiFinalizeRender(Ui *ui) {

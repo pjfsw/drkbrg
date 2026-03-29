@@ -48,7 +48,7 @@ TilesheetId uiLoadTilesheet(Ui *ui, const char *path);
 TileId uiCreateTile(Ui *ui, TilesheetId tilesheetId, int x, int y, int w, int h);
 
 TileId uiCreateTextboxTile(
-    Ui *ui, const char *text[], int w, int h, uint32_t textColor, uint32_t frameColor, uint32_t fillColor, bool fill);
+    Ui *ui, const char *text, int w, int h, uint32_t textColor, uint32_t frameColor, uint32_t fillColor, bool fill);
 
 void uiContextSetDefault(const Ui *ui, UiContext *ctx);
 

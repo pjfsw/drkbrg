@@ -6,25 +6,29 @@
 typedef enum {
     GS_INIT,
     GS_PLAY,
+    GS_GAMEOVER
 } GameState;
 
 typedef enum {
+    GPS_NEXT_NPC,
     GPS_WAIT_NPC,
     GPS_WAIT_PLAYER
-} GamePlayState;
+} GameplayState;
 
 typedef struct {
-    TileId foo;
+    TileId hero[4];
     UiContext boardCtx;
     UiContext rPanelCtx;
 } Graphics;
 
 typedef struct {
     GameState gameState;
+    GameplayState gameplayState;
     Hero hero[4];
     int currentHero;
     int sundial;
     char sundialString[8];
+    double t;
     Graphics g;
 } Game;
 

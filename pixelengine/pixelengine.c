@@ -76,6 +76,7 @@ void peRun(PixelEngine *pe, PeGameInitFunc gameInitFunc, PeGameUpdateFunc gameUp
         uiBeginRender(&pe->ui);
         uint64_t currentTick = SDL_GetTicksNS();
         double deltaTime = (double)(currentTick - lastTick) / 1000000000.0;
+        lastTick = currentTick;
         gameUpdateFunc(userData, deltaTime);
         gameRenderFunc(userData, &pe->ui);
         uiFinalizeRender(&pe->ui);        

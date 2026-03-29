@@ -4,6 +4,7 @@ static const int horisontalTiles = 13;
 static const int verticalTiles = 10;
 static const int tileSize = 32;
 static const int squareSize = tileSize+1;
+static const int maxTurns = 26;
 static const uint32_t gridColor = 0x282422ff;
 static const uint32_t lifeColor = 0xcc1111ff;
 static const uint32_t textColor = 0xffffffff;
@@ -13,16 +14,28 @@ static void updateSundialString(Game *game) {
     SDL_itoa(game->sundial, game->sundialString, 10);
 }
 
+static int createHeroTile(Graphics *g, Ui *ui, Hero *hero) {
+    char buf[100];
+    memset(buf, 0, sizeof(buf));
+    strcpy(buf, hero->name);
+    return uiCreateTextboxTile(ui, buf, 104,128, 0xffffffff, 0xffffffff, 0x383432ff, true);
+}
+
 static void initUiElements(Game *game, Ui *ui) {
-    const char *txt[] = {"FOO", "", "BAR BAZ", 0};
     Graphics *g = &game->g;
-    g->foo = uiCreateTextboxTile(ui, txt, 96,128, 0xffffffff, 0xffffffff, 0x383432ff, true);
+    for (int i = 0; i < 4; i++) {
+        g->hero[i] = createHeroTile(g, ui, &game->hero[i]);
+    }
     int bx = (uiWidth(ui) - (horisontalTiles * squareSize)) / 2;
     int bw = horisontalTiles * tileSize + 1;
     int by = (uiHeight(ui) - (verticalTiles * squareSize)) / 2;
     int bh = verticalTiles * tileSize + 1;
     uiContextSet(ui, &g->boardCtx, bx, by, bw, bh);
     uiContextSet(ui, &g->rPanelCtx, bx + bw + 8, by, uiWidth(ui), uiHeight(ui));
+}
+
+static void nextRound(Game *game) {
+    updateSundialString(game);
 }
 
 void gameInit(void *userData, Ui *ui) {
@@ -32,13 +45,84 @@ void gameInit(void *userData, Ui *ui) {
         game->hero[i].npc = true;
         game->hero[i].life = i + 7;
     }       
+    strcpy(game->hero[0].name, "RIDDAR ROHAN");
+    strcpy(game->hero[1].name, "SIGEIR SHARPYXE");
+    strcpy(game->hero[2].name, "RIDDAR RUT");
+    strcpy(game->hero[3].name, "BARDHOR BAGMAN");
+
     game->sundial = 1;
-    updateSundialString(game);
+    if (game->hero[0].npc) {
+        game->gameplayState = GPS_NEXT_NPC;
+    } else {
+        game->gameplayState = GPS_WAIT_PLAYER;
+    }
+    game->gameState = GS_PLAY;
+    nextRound(game);
     initUiElements(game, ui);
 }
 
+static void gpsNextNpc(Game *game) {
+    game->t = 0;
+    game->gameplayState = GPS_WAIT_NPC;
+}
+
+static void gameOver(Game *game) {
+    game->gameState = GS_GAMEOVER;
+}
+
+static void nextPlayer(Game *game) {
+    game->currentHero++;
+    if (game->currentHero > 3) {
+        game->currentHero = 0;
+        game->sundial++;
+    }
+    if (game->sundial > maxTurns) {
+        gameOver(game);
+    } else {
+        nextRound(game);
+        if (game->hero[game->currentHero].npc) {
+            game->gameplayState = GPS_NEXT_NPC;
+        } else {
+            game->gameplayState = GPS_WAIT_PLAYER;
+        }
+    }
+}
+
+static void gpsWaitNpc(Game *game, double deltaTime) {
+    game->t += deltaTime;
+    if (game->t > 0.5) {
+        nextPlayer(game);
+    }
+}
+
+static void gpsWaitPlayer(Game *game) {
+}
+
+static void gamePlay(Game *game, double deltaTime) {
+    switch (game->gameplayState) {
+        case GPS_NEXT_NPC:
+            gpsNextNpc(game);
+            break;
+        case GPS_WAIT_NPC:
+            gpsWaitNpc(game, deltaTime);
+            break;
+        case GPS_WAIT_PLAYER:
+            gpsWaitPlayer(game);
+            break;
+    }
+}
+
 void gameUpdate(void *userData, double deltaTime) {
-    Game *game = (Game*)userData;
+    Game *game = (Game *)userData;
+    switch (game->gameState) {
+        case GS_INIT:
+            break;
+        case GS_PLAY:
+            gamePlay(game, deltaTime);
+            break;
+        case GS_GAMEOVER:
+            break;
+    }
 }
 
 static int getScreenX(const Ui *ui, int x) {
@@ -63,29 +147,37 @@ static void drawBoard(Graphics *g, const Ui *ui) {
     uiFillRect(ctx, getScreenX(ui, horisontalTiles-1), getScreenY(ui, verticalTiles-1), squareSize, squareSize, gridColor);
 }
 
-void drawHero(Game *game, const Ui *ui) {
-    Hero *hero = &game->hero[game->currentHero];
-    UiContext ctx;
-
-    const int lifeSize = 8;
-    for (int i = 0; i < hero->life; i++) {
-        uiFillRect(&ctx, i * lifeSize, 0, lifeSize-1, lifeSize, lifeColor); 
-    }
-}
 
 static void drawRightPanel(Game *game, const Ui *ui) {
     int offset = (uiWidth(ui) - (horisontalTiles * squareSize)) / 2 + horisontalTiles * tileSize + 8;
     
     UiContext *ctx = &game->g.rPanelCtx;
     
-    uiWrite(ctx, "TURN   /26", 0, 0, textColor);
-    uiWrite(ctx, game->sundialString, 40, 0, textColor);
-    uiDrawTile(ctx, 0, 16, game->g.foo);
+    int y = 0;
+    uiWrite(ctx, "TURN   /26", 0, y, textColor);
+    uiWrite(ctx, game->sundialString, 40, y, textColor);    
+    y+=16;
+
+    uiDrawTile(ctx, 0, y, game->g.hero[game->currentHero]);
+
+    Hero *hero = &game->hero[game->currentHero];
+
+    y+=128;
+
+    const int lifeSize = 8;
+    for (int i = 0; i < hero->life; i++) {
+        uiFillRect(ctx, i * lifeSize, y, lifeSize-1, lifeSize, lifeColor); 
+    }
+
 
 }
 void gameRender(void *userData, const Ui *ui) {
     Game *game = (Game*)userData;
     drawBoard(&game->g, ui);
-    drawHero(game, ui);
     drawRightPanel(game, ui);
+    if (game->gameState == GS_GAMEOVER) {
+        UiContext ctx;
+        uiContextSetDefault(ui, &ctx);
+        uiWrite(&ctx, "GAME OVER!", (uiWidth(ui)-80)/2, (uiHeight(ui)-FONT_HEIGHT)/2, 0xff3333ff);
+    }
 }
