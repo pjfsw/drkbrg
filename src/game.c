@@ -14,7 +14,8 @@ void gameInit(void *userData, Ui *ui) {
         game->hero[i].npc = true;
         game->hero[i].life = i + 7;
     }       
-    game->tiles.foo = uiCreateTextboxTile(ui, "FOO", 64,64, 0xffffffff, 0x0000ffff, true);
+    const char *txt[] = {"FOO", "", "BAR BAZ", 0};
+    game->tiles.foo = uiCreateTextboxTile(ui, txt, 96,128, 0xffffffff, 0xffffffff, 0x0000ffff, true);
 }
 
 void gameUpdate(void *userData, double deltaTime) {
@@ -66,9 +67,9 @@ void drawHero(Game *game, const Ui *ui) {
 }
 
 void gameRender(void *userData, const Ui *ui) {
-    //drawBoard(ui);
+    drawBoard(ui);
     Game *game = (Game*)userData;
-    //drawHero(game, ui);
+    drawHero(game, ui);
     UiContext ctx;
     uiContextSetDefault(ui, &ctx);
     uiDrawTile(&ctx, 0, 0, game->tiles.foo);
