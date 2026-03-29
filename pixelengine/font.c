@@ -20,7 +20,7 @@ void fontInit(Font *font, SDL_Renderer *renderer) {
     uint32_t pixels[FONT_WIDTH*FONT_HEIGHT];    // RGBA8888 output        
     for (int i = 0 ; i < 256; i++) {
         for (int y = 0; y < FONT_HEIGHT; y++) {
-            uint8_t row = nes_font[i*FONT_HEIGHT+y];
+            uint8_t row = font_8x8[i*FONT_HEIGHT+y];
             for (int x = 0; x < 8; x++) {
                 int bit = (row >> (7 - x)) & 1;
                 pixels[y * 8 + x] = bit ? fg : bg;
