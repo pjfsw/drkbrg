@@ -1,4 +1,3 @@
 #!/bin/sh
 
-mkdir -p build && cd build && cmake .. && make && ./drkbrg
-
+cmake -B build -S . && cmake --build build --target clean && cmake --build build && ./build/drkbrg

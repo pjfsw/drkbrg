@@ -38,11 +38,15 @@ bool peInit(PixelEngine *pe, int width, int height, char *title) {
 
 }
 
-void peRun(PixelEngine *pe, PeGameUpdateFunc gameUpdateFunc, PeGameRenderFunc gameRenderFunc, void *userData) {
+void peRun(PixelEngine *pe, PeGameInitFunc gameInitFunc, PeGameUpdateFunc gameUpdateFunc, PeGameRenderFunc gameRenderFunc, void *userData) {
     bool quit = false;
     bool fullScreen = false;
     SDL_Event event;
     
+    gameInitFunc(userData, &pe->ui);
+    SDL_SetRenderTarget(pe->renderer, NULL);
+
+    uint64_t lastTick = SDL_GetTicksNS();
     while (!quit) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_EVENT_QUIT) {
@@ -70,7 +74,9 @@ void peRun(PixelEngine *pe, PeGameUpdateFunc gameUpdateFunc, PeGameRenderFunc ga
         SDL_RenderClear(pe->renderer);
 
         uiBeginRender(&pe->ui);
-        gameUpdateFunc(userData);
+        uint64_t currentTick = SDL_GetTicksNS();
+        double deltaTime = (double)(currentTick - lastTick) / 1000000000.0;
+        gameUpdateFunc(userData, deltaTime);
         gameRenderFunc(userData, &pe->ui);
         uiFinalizeRender(&pe->ui);        
         SDL_RenderPresent(pe->renderer);

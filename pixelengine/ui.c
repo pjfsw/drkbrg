@@ -1,6 +1,7 @@
-#include "ui.h"
-
 #include <SDL3_image/SDL_image.h>
+#include <stdio.h>
+
+#include "ui.h"
 
 static SDL_Texture *createTexture(SDL_Renderer *renderer, int w, int h) {
     SDL_Texture *texture = SDL_CreateTexture(
@@ -26,9 +27,11 @@ void uiInit(Ui *ui, SDL_Renderer *renderer, int w, int h) {
     ui->w = w;
     ui->h = h;
     ui->target = createTexture(renderer, w, h);
+    fontInit(&ui->font, renderer);
 }
 
 void uiDestroy(Ui *ui) {
+    fontDestroy(&ui->font);
     SDL_DestroyTexture(ui->target);
 }
 
@@ -41,15 +44,34 @@ int uiHeight(const Ui *ui) {
     return ui->h;
 }
 
+static inline void setColor(const Ui *ui, uint32_t color) {
+    SDL_SetRenderDrawColor(ui->renderer, (color >> 24) & 0xff, (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff);  
+}
+
+static TilesheetId addTileSheet(Ui *ui, SDL_Texture *tex) {
+    SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
+    TilesheetId id = ui->tilesheetCount++;
+    ui->tilesheets[id] = tex;
+    return id;
+}
+
 TilesheetId uiLoadTilesheet(Ui *ui, const char *path) {
     if (ui->tilesheetCount >= MAX_TILESHEETS) {
         return -1;
     }
     SDL_Texture *tex = IMG_LoadTexture(ui->renderer, path);
-    SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
-    TilesheetId id = ui->tilesheetCount++;
-    ui->tilesheets[id] = tex;
-    return id;
+    return addTileSheet(ui, tex);
+}
+
+static TileId createTile(Ui *ui, TilesheetId tilesheetId, int x, int y, int w, int h) {
+    int tileId = ui->tileCount++;
+    Tile *tile = &ui->tiles[tileId];
+    tile->tilesheetId = tilesheetId;
+    tile->cut.x = x;
+    tile->cut.y = y;
+    tile->cut.w = w;
+    tile->cut.h = h;   
+    return tileId; 
 }
 
 TileId uiCreateTile(Ui *ui, TilesheetId tilesheetId, int x, int y, int w, int h) {
@@ -68,14 +90,33 @@ TileId uiCreateTile(Ui *ui, TilesheetId tilesheetId, int x, int y, int w, int h)
     if ((y+h) >= texh) {
         h = texh-h;
     }
-    int tileId = ui->tileCount++;
-    Tile *tile = &ui->tiles[tileId];
-    tile->tilesheetId = tilesheetId;
-    tile->cut.x = x;
-    tile->cut.y = y;
-    tile->cut.w = w;
-    tile->cut.h = h;   
-    return tileId; 
+    return createTile(ui, tilesheetId, x, y, w, h);
+}
+
+TileId uiCreateTextboxTile(
+    Ui *ui, const char *text, int w, int h, uint32_t textColor, uint32_t frameColor, bool fill) {
+    if ((ui->tilesheetCount >= MAX_TILESHEETS) || (ui->tileCount >= MAX_TILES)) {
+        return -1;
+    }
+    SDL_Texture *tex = createTexture(ui->renderer, w, h);
+    TilesheetId tilesheetId = addTileSheet(ui, tex);
+    SDL_SetRenderTarget(ui->renderer, tex);
+    SDL_FRect rect = {
+        .x = 0,
+        .y = 0,
+        .w = w-1,
+        .h = h-1
+    };
+    setColor(ui, frameColor);    
+    if (fill) {
+        SDL_RenderFillRect(ui->renderer, &rect);
+    } else {
+        SDL_RenderRect(ui->renderer, &rect);
+    }
+    int tx = (w - strlen(text) * FONT_WIDTH) / 2;
+    int ty = (h - FONT_HEIGHT) / 2 ;
+    fontWrite(&ui->font, text, tx, ty, textColor);
+    return createTile(ui, tilesheetId, 0, 0, w, h);
 }
 
 void uiContextSetDefault(const Ui *ui, UiContext *ctx) {
@@ -116,15 +157,31 @@ static inline int getY(const UiContext *ctx, int y) {
     }
 }
 
-void uiDrawTile(const UiContext *ctx, int x, int y, TileId tile) {
+void uiDrawTile(const UiContext *ctx, int x, int y, TileId tileId) {
     const Ui *ui = ctx->ui;
-
-    if ((tile < 0) || (tile >= ui->tileCount)) {
+    if ((tileId < 0) || (tileId >= ui->tileCount)) {
         return;
     }
+    setContext(ctx);
+
+    Tile *tile = &ui->tiles[tileId];    
+    SDL_FRect srcRect = {
+        .x = tile->cut.x,
+        .y = tile->cut.y,
+        .w = tile->cut.w,
+        .h = tile->cut.h
+    };
+    SDL_FRect destRect = {
+        .x = getX(ctx, x),
+        .y = getY(ctx, y),
+        .w = tile->cut.w,
+        .h = tile->cut.h
+    };
+    SDL_Texture *tex = ui->tilesheets[tile->tilesheetId];
+    SDL_RenderTexture(ui->renderer, tex, &srcRect, &destRect);
 }
 
-void uiDrawRect(const UiContext *ctx, int x, int y, int w, int h, uint32_t color, bool fill) {
+static inline void drawOrFillRect(const UiContext *ctx, int x, int y, int w, int h, uint32_t color, bool fill) {
     const Ui *ui = ctx->ui;
     setContext(ctx);
     SDL_FRect rect = {
@@ -133,7 +190,7 @@ void uiDrawRect(const UiContext *ctx, int x, int y, int w, int h, uint32_t color
         .w = w,
         .h = h
     };
-    SDL_SetRenderDrawColor(ui->renderer, (color >> 24) & 0xff, (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff);    
+    setColor(ui, color);
     if (fill) {
         SDL_RenderFillRect(ui->renderer, &rect);
     } else {
@@ -141,9 +198,20 @@ void uiDrawRect(const UiContext *ctx, int x, int y, int w, int h, uint32_t color
     }
 }
 
-void uiFillRect(const UiContext *ctx, int x, int y, int w, int h, uint32_t color) {
-    uiDrawRect(ctx, x, y, w, h, color, true);
+void uiDrawRect(const UiContext *ctx, int x, int y, int w, int h, uint32_t color) {
+    drawOrFillRect(ctx, x, y, w, h, color, false);
 }
+
+void uiFillRect(const UiContext *ctx, int x, int y, int w, int h, uint32_t color) {
+    drawOrFillRect(ctx, x, y, w, h, color, true);
+}
+
+void uiWrite(const UiContext *ctx, const char *text, int x, int y, uint32_t color) {
+    const Ui *ui = ctx->ui;
+    setContext(ctx);
+    fontWrite(&ui->font, text, getX(ctx, x), getY(ctx, y), color);
+}
+
 
 void uiBeginRender(Ui *ui) {
     SDL_SetRenderTarget(ui->renderer, ui->target);

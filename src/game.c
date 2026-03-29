@@ -7,15 +7,17 @@ static const int squareSize = tileSize+1;
 static const uint32_t gridColor = 0x282422ff;
 static const uint32_t lifeColor = 0xcc1111ff;
 
-void gameInit(Game *game) {
+void gameInit(void *userData, Ui *ui) {
+    Game *game = (Game*)userData;
     memset(game, 0, sizeof(Game));
     for (int i = 0; i < 4; i++) {
         game->hero[i].npc = true;
         game->hero[i].life = i + 7;
-    }        
+    }       
+    game->tiles.foo = uiCreateTextboxTile(ui, "FOO", 64,64, 0xffffffff, 0x0000ffff, true);
 }
 
-void gameUpdate(void *userData) {
+void gameUpdate(void *userData, double deltaTime) {
     Game *game = (Game*)userData;
 }
 
@@ -38,7 +40,7 @@ static void drawBoard(const Ui *ui) {
 
     for (int x = 0; x < horisontalTiles; x++) {
         for (int y = 0; y < verticalTiles; y++) {
-            uiDrawRect(&ctx, getScreenX(ui, x), getScreenY(ui, y), squareSize, squareSize, gridColor, false);
+            uiDrawRect(&ctx, getScreenX(ui, x), getScreenY(ui, y), squareSize, squareSize, gridColor);
         }
     }
     uiFillRect(&ctx, getScreenX(ui, 0), getScreenY(ui, 0), squareSize, squareSize, gridColor);
@@ -64,7 +66,10 @@ void drawHero(Game *game, const Ui *ui) {
 }
 
 void gameRender(void *userData, const Ui *ui) {
-    drawBoard(ui);
+    //drawBoard(ui);
     Game *game = (Game*)userData;
-    drawHero(game, ui);
+    //drawHero(game, ui);
+    UiContext ctx;
+    uiContextSetDefault(ui, &ctx);
+    uiDrawTile(&ctx, 0, 0, game->tiles.foo);
 }

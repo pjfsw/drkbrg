@@ -16,6 +16,7 @@ add_library(PixelEngine STATIC
     pixelengine/ui.h
     pixelengine/pixelengine.c
     pixelengine/pixelengine.h
+    pixelengine/font.c
 )
 
 # Tell Engine where its own headers are, and export that path to consumers
@@ -48,8 +49,10 @@ else()
         -Wextra 
         -Wpedantic 
         -Werror 
+        -Werror=int-conversion
         -Wno-unused-variable 
         -Wno-unused-parameter
+        -Wno-unused-function
     )
 endif()
 

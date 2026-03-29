@@ -1,8 +1,9 @@
 #pragma once
 
 #include <SDL3/SDL.h>
-
 #include <stdbool.h>
+
+#include "font.h"
 
 #define MAX_TILESHEETS 256
 #define MAX_TILES 2048
@@ -22,6 +23,7 @@ typedef struct {
     SDL_Renderer *renderer;
     SDL_Texture *target;
     SDL_Texture *tilesheets[MAX_TILESHEETS];
+    Font font;
     int tilesheetCount;
     Tile tiles[MAX_TILES];
     int tileCount;
@@ -45,15 +47,20 @@ TilesheetId uiLoadTilesheet(Ui *ui, const char *path);
 
 TileId uiCreateTile(Ui *ui, TilesheetId tilesheetId, int x, int y, int w, int h);
 
-const UiContext *uiContextGetDefault(const Ui *ui);
+TileId uiCreateTextboxTile(
+    Ui *ui, const char *text, int w, int h, uint32_t textColor, uint32_t frameColor, bool fill);
+
+void uiContextSetDefault(const Ui *ui, UiContext *ctx);
 
 void uiContextSet(const Ui *ui, UiContext *ctx, int x, int y, int w, int h);
 
 void uiDrawTile(const UiContext *ctx, int x, int y, TileId tile);
 
-void uiDrawRect(const UiContext *ctx, int x, int y, int w, int h, uint32_t color, bool fill);
+void uiDrawRect(const UiContext *ctx, int x, int y, int w, int h, uint32_t color);
 
 void uiFillRect(const UiContext *ctx, int x, int y, int w, int h, uint32_t color);
+
+void uiWrite(const UiContext *ctx, const char *text, int x, int y, uint32_t color);
 
 void uiBeginRender(Ui *ui);
 

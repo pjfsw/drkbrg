@@ -9,12 +9,15 @@ typedef struct {
     Ui ui;
 } PixelEngine;
 
-typedef void (*PeGameUpdateFunc)(void *userData);
+typedef void (*PeGameInitFunc)(void *userData, Ui *ui);
+
+typedef void (*PeGameUpdateFunc)(void *userData, double deltaTime);
 
 typedef void (*PeGameRenderFunc)(void *userData, const Ui *ui);
 
 bool peInit(PixelEngine *pe, int width, int height, char *title);
 
-void peRun(PixelEngine *pe, PeGameUpdateFunc gameUpdateFunc, PeGameRenderFunc gameRenderFunc, void *userData);
+void peRun(PixelEngine *pe, PeGameInitFunc gameInitFunc, PeGameUpdateFunc gameUpdateFunc,
+    PeGameRenderFunc gameRenderFunc, void *userData);
 
 void peDestroy(PixelEngine *pe);
