@@ -15,13 +15,17 @@ typedef enum {
 
 typedef struct {
     TileId foo;
-} Tiles;
+    UiContext boardCtx;
+    UiContext rPanelCtx;
+} Graphics;
 
 typedef struct {
     GameState gameState;
     Hero hero[4];
     int currentHero;
-    Tiles tiles;
+    int sundial;
+    char sundialString[8];
+    Graphics g;
 } Game;
 
 void gameInit(void *userData, Ui *ui);
