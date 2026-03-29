@@ -185,7 +185,7 @@ void uiDrawTile(const UiContext *ctx, int x, int y, TileId tileId) {
     }
     setContext(ctx);
 
-    Tile *tile = &ui->tiles[tileId];    
+    const Tile *tile = &ui->tiles[tileId]; 
     SDL_FRect srcRect = {
         .x = tile->cut.x,
         .y = tile->cut.y,

@@ -2,7 +2,9 @@
 
 #include "ui.h"
 #include "hero.h"
+#include "room.h"
 
+#define NUMBER_OF_HEROES 4
 typedef enum {
     GS_INIT,
     GS_PLAY,
@@ -16,15 +18,23 @@ typedef enum {
 } GameplayState;
 
 typedef struct {
-    TileId hero[4];
+    int x;
+    int y;
+} Coord;
+
+typedef struct {
+    TileId hero[NUMBER_OF_HEROES];
     UiContext boardCtx;
     UiContext rPanelCtx;
+    uint16_t frame;
 } Graphics;
 
 typedef struct {
     GameState gameState;
     GameplayState gameplayState;
-    Hero hero[4];
+    Hero hero[NUMBER_OF_HEROES];
+    Coord heroPos[NUMBER_OF_HEROES];
+    Coord entrancePositions[4];
     int currentHero;
     int sundial;
     char sundialString[8];

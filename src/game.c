@@ -23,7 +23,7 @@ static int createHeroTile(Graphics *g, Ui *ui, Hero *hero) {
 
 static void initUiElements(Game *game, Ui *ui) {
     Graphics *g = &game->g;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < NUMBER_OF_HEROES; i++) {
         g->hero[i] = createHeroTile(g, ui, &game->hero[i]);
     }
     int bx = (uiWidth(ui) - (horisontalTiles * squareSize)) / 2;
@@ -38,18 +38,17 @@ static void nextRound(Game *game) {
     updateSundialString(game);
 }
 
-void gameInit(void *userData, Ui *ui) {
-    Game *game = (Game*)userData;
-    memset(game, 0, sizeof(Game));
-    for (int i = 0; i < 4; i++) {
+static void newGame(Game *game) {
+    for (int i = 0; i < NUMBER_OF_HEROES; i++) {
         game->hero[i].npc = true;
         game->hero[i].life = i + 7;
+        memcpy(&game->heroPos[i], &game->entrancePositions[i], sizeof(Coord));
     }       
-    strcpy(game->hero[0].name, "RIDDAR ROHAN");
-    strcpy(game->hero[1].name, "SIGEIR SHARPYXE");
-    strcpy(game->hero[2].name, "RIDDAR RUT");
-    strcpy(game->hero[3].name, "BARDHOR BAGMAN");
-
+    strcpy(game->hero[0].name, "SIR ROHAN");
+    strcpy(game->hero[1].name, "SIGEIR\nSHARPAXE");
+    strcpy(game->hero[2].name, "SIR RUT");
+    strcpy(game->hero[3].name, "BARDHOR\nBOWMAN");
+    
     game->sundial = 1;
     if (game->hero[0].npc) {
         game->gameplayState = GPS_NEXT_NPC;
@@ -58,6 +57,18 @@ void gameInit(void *userData, Ui *ui) {
     }
     game->gameState = GS_PLAY;
     nextRound(game);
+}
+
+void gameInit(void *userData, Ui *ui) {
+    Game *game = (Game*)userData;
+    memset(game, 0, sizeof(Game));
+    Coord entrancePositions[4] = {{.x = 0, .y = 0},
+        {.x = horisontalTiles - 1, .y = 0},
+        {.x = horisontalTiles - 1, .y = verticalTiles - 1},
+        {.x = 0, .y = verticalTiles - 1}};
+    memcpy(game->entrancePositions, entrancePositions, sizeof(entrancePositions));
+
+    newGame(game);
     initUiElements(game, ui);
 }
 
@@ -72,7 +83,7 @@ static void gameOver(Game *game) {
 
 static void nextPlayer(Game *game) {
     game->currentHero++;
-    if (game->currentHero > 3) {
+    if (game->currentHero >= NUMBER_OF_HEROES) {
         game->currentHero = 0;
         game->sundial++;
     }
@@ -88,9 +99,19 @@ static void nextPlayer(Game *game) {
     }
 }
 
+static RoomTile *pullRoomTile(Game *game) {
+    return NULL;
+}
+
+static void npcMakeMove(Game *game) {
+    //RoomTile *roomTile = pullRoomTile(game);
+
+}
+
 static void gpsWaitNpc(Game *game, double deltaTime) {
     game->t += deltaTime;
-    if (game->t > 0.5) {
+    if (game->t > 1) {
+        npcMakeMove(game);
         nextPlayer(game);
     }
 }
@@ -133,7 +154,15 @@ static int getScreenY(const Ui *ui, int y) {
     return y * tileSize;
 }
 
-static void drawBoard(Graphics *g, const Ui *ui) {
+static const uint32_t heroColor[4] = {
+    0xff00ffcc,
+    0xffff00cc,
+    0x00ffffcc,
+    0xff7700cc
+};
+
+static void drawBoard(Game *game, const Ui *ui) {
+    Graphics *g = &game->g;
     UiContext *ctx = &g->boardCtx;
 
     for (int x = 0; x < horisontalTiles; x++) {
@@ -145,6 +174,21 @@ static void drawBoard(Graphics *g, const Ui *ui) {
     uiFillRect(ctx, getScreenX(ui, horisontalTiles-1), getScreenY(ui, 0), squareSize, squareSize, gridColor);
     uiFillRect(ctx, getScreenX(ui, 0), getScreenY(ui, verticalTiles-1), squareSize, squareSize, gridColor);
     uiFillRect(ctx, getScreenX(ui, horisontalTiles-1), getScreenY(ui, verticalTiles-1), squareSize, squareSize, gridColor);
+
+    for (int i = 0; i < NUMBER_OF_HEROES; i++) {
+        uint32_t color = heroColor[i];
+        if (i == game->currentHero && ((game->g.frame & 0xfff) > 0x800)) {
+            color = (color & 0xFFFFFF00) | 0xFF;
+        } else {
+            color = (color & 0xFFFFFF00) | 0x80;
+        }
+        uiFillRect(ctx,
+            getScreenX(ui, game->heroPos[i].x)+2,
+            getScreenY(ui, game->heroPos[i].y)+2,
+            tileSize - 3,
+            tileSize - 3,
+            color);
+    }
 }
 
 
@@ -168,12 +212,12 @@ static void drawRightPanel(Game *game, const Ui *ui) {
     for (int i = 0; i < hero->life; i++) {
         uiFillRect(ctx, i * lifeSize, y, lifeSize-1, lifeSize, lifeColor); 
     }
-
-
 }
-void gameRender(void *userData, const Ui *ui) {
+
+void gameRender(void *userData, const Ui *ui) {    
     Game *game = (Game*)userData;
-    drawBoard(&game->g, ui);
+    game->g.frame++;
+    drawBoard(game, ui);
     drawRightPanel(game, ui);
     if (game->gameState == GS_GAMEOVER) {
         UiContext ctx;
